@@ -1,0 +1,56 @@
+/ip firewall address-list
+add address=10.23.0.0/16 list=local
+add address=192.168.1.0/24 list=local
+add address=10.23.21.0/24 list=safe
+add list=ddos-attackers
+add list=ddos-targets
+
+
+/ip firewall filter
+add action=drop chain=input comment="Drop invalid packets" connection-state=invalid
+add action=drop chain=forward comment="Drop invalid packets" connection-state=invalid
+add action=drop chain=input comment="Drop all packets which are not destined to routes IP address" dst-address-type=!local
+add action=drop chain=input comment="Drop all packets which does not have unicast source IP address" src-address-type=!unicast
+add action=drop chain=input comment="Drop to the other ICMPs" protocol=icmp src-address-list=!local
+add action=drop chain=input dst-port=53 protocol=udp src-address-list=!local
+add action=drop chain=input dst-port=53 protocol=tcp src-address-list=!local
+add action=drop chain=input dst-port=8291 protocol=tcp src-address-list=!local
+add action=accept chain=input dst-port=8291 protocol=tcp src-address-list=safe
+add action=drop chain=forward comment=BLACKLIST src-address-list=blacklist
+add action=drop chain=forward comment=BLACKLIST dst-address-list=blacklist
+add action=drop chain=output comment=BLACKLIST src-address-list=blacklist
+add action=drop chain=input comment=BLACKLIST src-address-list=blacklist
+add action=add-src-to-address-list address-list=Syn_Flooder address-list-timeout=30m chain=input comment="Add Syn Flood IP to the list" connection-limit=30,32 protocol=tcp tcp-flags=syn
+add action=drop chain=input comment="Drop to syn flood list" src-address-list=Syn_Flooder
+add action=add-src-to-address-list address-list=Port_Scanner address-list-timeout=1w chain=input comment="Port Scanner Detect" protocol=tcp psd=21,3s,3,1
+add action=drop chain=input comment="Drop to port scan list" src-address-list=Port_Scanner
+add action=jump chain=input comment="Jump for icmp input flow" jump-target=ICMP protocol=icmp
+add action=jump chain=forward comment="Jump for icmp forward flow" jump-target=ICMP protocol=icmp
+add action=add-src-to-address-list address-list=spammers address-list-timeout=3h chain=forward comment="Add Spammers to the list for 3 hours" connection-limit=30,32 dst-port=25,587 \
+    limit=30/1m,0 protocol=tcp
+add action=drop chain=input comment="dropping port scanners" src-address-list=port_scanners_list
+add action=drop chain=forward comment="Avoid spammers action" dst-port=25,587 protocol=tcp src-address-list=spammers
+add action=return chain=detect-ddos dst-limit=32,32,src-and-dst-addresses/10s
+add action=add-dst-to-address-list address-list=ddos-targets address-list-timeout=10m chain=detect-ddos
+add action=add-src-to-address-list address-list=ddos-attackers address-list-timeout=10m chain=detect-ddos
+add action=return chain=detect-ddos dst-limit=32,32,src-and-dst-addresses/10s protocol=tcp tcp-flags=syn,ack
+add action=accept chain=forward dst-address-list=local
+add action=accept chain=forward src-address-list=local
+add action=accept chain=output dst-address-list=local
+add action=accept chain=input dst-address-list=local
+add action=accept chain=output src-address-list=local
+add action=accept chain=input src-address-list=local
+add action=drop chain=input comment="Drop anything else"
+add chain=input comment="Accept established and related packets" connection-state=established,related
+add chain=forward comment="Accept established and related packets" connection-state=established,related
+
+/ip firewall service-port
+set ftp disabled=yes
+set tftp disabled=yes
+set h323 disabled=yes
+set sip disabled=yes ports=5060 sip-timeout=5m
+set pptp disabled=yes
+set udplite disabled=yes
+set dccp disabled=yes
+set sctp disabled=yes
+
