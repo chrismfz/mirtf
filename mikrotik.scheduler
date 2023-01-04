@@ -1,0 +1,3 @@
+/tool fetch url="http://10.23.21.100/threats/blacklist.rsc" mode=http dst-path=blacklist.rsc;:log info "my blacklist downloaded";
+/ip firewall address-list remove [find where list="blacklist"];
+/import file-name=blacklist.rsc;:log info "imported new list";
