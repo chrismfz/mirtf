@@ -1,7 +1,9 @@
 # mirtf
 Mikrotik IP Reputation Threats Firewall
 
-Gran any kind of Blacklist / IP Reputation lists / Other's lists, I use:
+Grab any kind of Blacklist / IP Reputation lists / Other's lists, and create a unique and sorted list for firewall and mirkotik use:
+
+This script uses:
 
 IPSum from https://github.com/stamparm/maltrail - https://github.com/stamparm/ipsum
 
